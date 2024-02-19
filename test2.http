@@ -1,0 +1,6 @@
+POST    http://localhost:8080/upload
+Content-Type:application/json
+
+{"data":{"folder":12, "user":22, "project_name":1, "project_data":2, "upload_time":3}}
+
+

@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/static/css/main.039c41cb.css",
+    "main.js": "/static/js/main.ed8082a3.js",
+    "static/media/iconnew.png": "/static/media/iconnew.527549120775574d11ec.png",
+    "static/media/instai_icon.png": "/static/media/instai_icon.59546d687a3219bc61e0.png",
+    "index.html": "/index.html",
+    "main.039c41cb.css.map": "/static/css/main.039c41cb.css.map",
+    "main.ed8082a3.js.map": "/static/js/main.ed8082a3.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.039c41cb.css",
+    "static/js/main.ed8082a3.js"
+  ]
+}
