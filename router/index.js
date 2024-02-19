@@ -78,7 +78,7 @@ router.post('/CreateFolder', (req, res) => {
   res.send('fail   ');
 });
 
-//刪除使用者上傳檔案之資料夾(還沒用到)
+//刪除使用者上傳檔案之資料夾
 router.delete('/DeleteFolder/:folder_name', (req, res) => {
 
   const folderName = req.params.folder_name;
@@ -177,5 +177,32 @@ router.post('/Requirement', (req, res) => {
 //抓取圖片
 router.get('/Download', (req, res) => {
 
+});
+
+//checkdata
+router.get('/upload', (req, res) => {
+  
+  const query = 'SELECT id, project_data FROM Project';
+
+  pool.query(query, (error, results, fields) => {
+    if (error) {
+      console.error('Error executing query: ', error);
+      res.status(500).json({ error: 'An error occurred while fetching data' });
+      return;
+    }
+    console.log('test1')
+    console.log(results)
+    // 將檢索到的資料返回給前端
+    res.json(results);
+  });
+});
+
+
+//刪除圖片
+router.delete('/DeleteItem/:id', (req, res) => {
+  const id = req.params.id
+  console.log(2222)
+  console.log(id)
+ 
 });
 module.exports = router;
