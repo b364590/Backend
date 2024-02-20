@@ -68,4 +68,13 @@ page.get('/CheckData', (req, res) => {
 
 });
 
+page.get('/CheckRequirement', (req, res) => {
+
+    const response = 200;
+
+    res.sendFile(path.join(__dirname, "../build/index.html"));
+
+
+});
+
 module.exports = page;

@@ -160,7 +160,7 @@ router.post('/Requirement', (req, res) => {
   const fileName = 'requirement.json'
   //const filePath = path.join(__dirname, '../UserUploadFolder', fileName); //
   const filePath = `${__dirname}/../UserUploadFolder/${req.body.inform.folder_name}/${fileName}`;
-
+  console.log(filePath)
   console.log(jsonData)
 
   fs.writeFile(filePath, jsonData, 'utf8', (err) => {
@@ -174,14 +174,16 @@ router.post('/Requirement', (req, res) => {
   pool.query(`insert into Requirement (requirement_path, author, uploadtime) values ('${filePath}', '${user}', '${String(time)}');`)
 });
 
-//抓取圖片
+/*
+//抓取圖片(????)
 router.get('/Download', (req, res) => {
 
 });
+*/
 
-//checkdata
+//checkdata(抓取資料庫有哪些圖片)
 router.get('/upload', (req, res) => {
-  
+
   const query = 'SELECT id, project_data FROM Project';
 
   pool.query(query, (error, results, fields) => {
@@ -190,9 +192,7 @@ router.get('/upload', (req, res) => {
       res.status(500).json({ error: 'An error occurred while fetching data' });
       return;
     }
-    console.log('test1')
-    console.log(results)
-    // 將檢索到的資料返回給前端
+
     res.json(results);
   });
 });
@@ -201,8 +201,87 @@ router.get('/upload', (req, res) => {
 //刪除圖片
 router.delete('/DeleteItem/:id', (req, res) => {
   const id = req.params.id
-  console.log(2222)
-  console.log(id)
- 
+  pool.query('SELECT folder, project_name FROM Project', (error, results) => { //從資料庫查詢folder和project_name以删除后端文件夹对应的图片
+    if (error) {
+      console.error('Error executing query: ', error);
+      res.status(500).json({ error: 'An error occurred while fetching data' });
+      return;
+    }
+    console.log(results[0])
+    const folder_name = results[0].folder
+    const fileName = results[0].project_name
+    const folderPath = `${__dirname}/../UserUploadFolder/${folder_name}/${fileName}`; // 指定要删除照片的文件夹路径
+    console.log(folderPath)
+    const photoPath = path.join(folderPath, fileName);
+    console.log(photoPath)
+    // 检查照片是否存在
+    if (fs.existsSync(folderPath)) {
+      // 删除照片
+      fs.unlink(folderPath, (err) => {
+        if (err) {
+          console.error('Error deleting photo:', err);
+          res.status(500).json({ error: 'An error occurred while deleting photo' });
+          return;
+        } else {
+          console.log('Photo deleted successfully!');
+          // 文件删除成功后，继续执行数据库查询和响应发送
+          pool.query(`DELETE FROM Project WHERE id = '${id}'`, (error, results) => { //删除数据库内文件
+            if (error) {
+              console.error('Error executing query: ', error);
+              res.status(500).json({ error: 'An error occurred while deleting data from database' });
+              return;
+            }
+            res.status(200).json({ message: 'Item deleted successfully' });
+          });
+        }
+      });
+    } else {
+      console.log('Photo does not exist.');
+      // 如果照片不存在，仍需执行数据库查询和响应发送
+      pool.query(`DELETE FROM Project WHERE id = '${id}'`, (error, results) => { //删除資料庫内圖片
+        if (error) {
+          console.error('Error executing query: ', error);
+          res.status(500).json({ error: 'An error occurred while deleting data from database' });
+          return;
+        }
+        res.status(200).json({ message: 'Item deleted successfully' });
+      });
+    }
+  });
 });
+
+//get指定資料夾內的requirement.json
+router.get('/RequirementJson/:folder_name', (req, res) => {
+  const folderName = req.params.folder_name;
+
+  const folderPath = `${__dirname}/../UserUploadFolder/${folderName}/requirement.json`;
+  console.log(folderPath)
+
+  // 检查文件是否存在
+  fs.access(folderPath, fs.constants.F_OK, (err) => {
+    if (err) {
+      console.error('File does not exist:', err);
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // 读取文件内容并发送给客户端
+    fs.readFile(folderPath, 'utf8', (err, data) => {
+      if (err) {
+        console.error('Error reading file:', err);
+        return res.status(500).json({ error: 'Error reading file' });
+      }
+      try {
+        const jsonData = JSON.parse(data);
+        console.log(jsonData);
+        res.json(jsonData);
+      } catch (error) {
+        console.error('Error parsing JSON:', error);
+        res.status(500).json({ error: 'Error parsing JSON' });
+      }
+    });
+  });
+
+});
+
+
 module.exports = router;
