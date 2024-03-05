@@ -127,8 +127,8 @@ router.post('/upload', (req, res) => {
   const imagePath = path.join(folderPath, String(project_name));
   console.log(String(project_data[0]))
   const base64Data = String(project_data[0]).replace(/^data:image\/jpeg;base64,/, "");
- 
-  
+
+
   fs.writeFileSync(imagePath, base64Data, 'base64');
 
 });
@@ -200,8 +200,9 @@ router.get('/upload/:folder_name', (req, res) => {
         return res.status(500).json({ error: 'Error reading folder' });
       }
 
-      // 构建文件路径数组
-      const photoPaths = files.map(file => path.join(folderPath, file));
+      // 过滤出.jpg文件
+      const photoPaths = files.filter(file => file.endsWith('.jpg'))
+                              .map(file => path.join(folderPath, file));
 
       // 将文件路径数组作为响应发送给前端
       res.json({ photoPaths });
@@ -227,7 +228,7 @@ router.get('/upload/:folder_name', (req, res) => {
 });
 
 
- 
+
 
 
 //刪除圖片
