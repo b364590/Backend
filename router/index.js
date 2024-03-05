@@ -4,6 +4,7 @@ const pool = require("../src/sql.js");
 const path = require("path");
 const multer = require('multer');
 const fs = require('fs');
+const { log } = require('console');
 //新增使用者資訊到login table
 router.post('/login', (req, res) => {
 
@@ -63,7 +64,6 @@ router.post('/WCreateFolder', (req, res) => {
 //創建使用者上傳檔案之資料夾
 router.post('/CreateFolder', (req, res) => {
   const folderName = req.body.data.folder_name
-  console.log("test")
   console.log(req.body)
   // 動態生成資料夾路徑
   const folderPath = path.join(__dirname, '..', 'UserUploadFolder', folderName);
@@ -124,8 +124,11 @@ router.post('/upload', (req, res) => {
   res.sendStatus(200);
 
   const folderPath = path.join(__dirname, '../UserUploadFolder', folder);
-  const imagePath = path.join(folderPath, project_name[0]);
-  const base64Data = project_data[0].replace(/^data:image\/jpeg;base64,/, "");
+  const imagePath = path.join(folderPath, String(project_name));
+  console.log(String(project_data[0]))
+  const base64Data = String(project_data[0]).replace(/^data:image\/jpeg;base64,/, "");
+ 
+  
   fs.writeFileSync(imagePath, base64Data, 'base64');
 
 });
@@ -182,8 +185,33 @@ router.get('/Download', (req, res) => {
 */
 
 //checkdata(抓取資料庫有哪些圖片)
-router.get('/upload', (req, res) => {
+router.get('/upload/:folder_name', (req, res) => {
 
+  const folderName = req.params.folder_name
+  const folderPath = `${__dirname}/../UserUploadFolder/${folderName}`;
+  console.log(folderPath)
+
+  // 检查文件夹是否存在
+  if (fs.existsSync(folderPath)) {
+    // 读取文件夹中的文件列表
+    fs.readdir(folderPath, (err, files) => {
+      if (err) {
+        console.error('Error reading folder:', err);
+        return res.status(500).json({ error: 'Error reading folder' });
+      }
+
+      // 构建文件路径数组
+      const photoPaths = files.map(file => path.join(folderPath, file));
+
+      // 将文件路径数组作为响应发送给前端
+      res.json({ photoPaths });
+      console.log(photoPaths)
+    });
+  } else {
+    res.status(404).json({ error: 'Folder not found' });
+  }
+
+  /*
   const query = 'SELECT id, project_data FROM Project';
 
   pool.query(query, (error, results, fields) => {
@@ -195,7 +223,11 @@ router.get('/upload', (req, res) => {
 
     res.json(results);
   });
+  */
 });
+
+
+ 
 
 
 //刪除圖片

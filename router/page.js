@@ -77,4 +77,13 @@ page.get('/CheckRequirement', (req, res) => {
 
 });
 
+page.get('/Training', (req, res) => {
+
+    const response = 200;
+
+    res.sendFile(path.join(__dirname, "../build/index.html"));
+
+
+});
+
 module.exports = page;
