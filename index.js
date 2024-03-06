@@ -18,6 +18,7 @@ app.use(router)
 app.use(page)
 app.use(uploadRouter);
 app.use(express.static("./build"))
+app.use('/', express.static(path.join(__dirname, 'UserUploadFolder')));//不知道啥用
 const port = 8080
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)

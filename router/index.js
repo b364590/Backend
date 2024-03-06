@@ -184,12 +184,12 @@ router.get('/Download', (req, res) => {
 });
 */
 
-//checkdata(抓取資料庫有哪些圖片)
+//checkdata(抓有哪些圖片)
 router.get('/upload/:folder_name', (req, res) => {
 
   const folderName = req.params.folder_name
   const folderPath = `${__dirname}/../UserUploadFolder/${folderName}`;
-  console.log(folderPath)
+
 
   // 检查文件夹是否存在
   if (fs.existsSync(folderPath)) {
@@ -202,11 +202,10 @@ router.get('/upload/:folder_name', (req, res) => {
 
       // 过滤出.jpg文件
       const photoPaths = files.filter(file => file.endsWith('.jpg'))
-                              .map(file => path.join(folderPath, file));
+        .map(file => path.join(folderPath, file));
 
       // 将文件路径数组作为响应发送给前端
       res.json({ photoPaths });
-      console.log(photoPaths)
     });
   } else {
     res.status(404).json({ error: 'Folder not found' });
@@ -232,55 +231,45 @@ router.get('/upload/:folder_name', (req, res) => {
 
 
 //刪除圖片
-router.delete('/DeleteItem/:id', (req, res) => {
-  const id = req.params.id
-  pool.query('SELECT folder, project_name FROM Project', (error, results) => { //從資料庫查詢folder和project_name以删除后端文件夹对应的图片
-    if (error) {
-      console.error('Error executing query: ', error);
-      res.status(500).json({ error: 'An error occurred while fetching data' });
-      return;
-    }
-    console.log(results[0])
-    const folder_name = results[0].folder
-    const fileName = results[0].project_name
-    const folderPath = `${__dirname}/../UserUploadFolder/${folder_name}/${fileName}`; // 指定要删除照片的文件夹路径
-    console.log(folderPath)
-    const photoPath = path.join(folderPath, fileName);
-    console.log(photoPath)
-    // 检查照片是否存在
-    if (fs.existsSync(folderPath)) {
-      // 删除照片
-      fs.unlink(folderPath, (err) => {
-        if (err) {
-          console.error('Error deleting photo:', err);
-          res.status(500).json({ error: 'An error occurred while deleting photo' });
-          return;
-        } else {
-          console.log('Photo deleted successfully!');
-          // 文件删除成功后，继续执行数据库查询和响应发送
-          pool.query(`DELETE FROM Project WHERE id = '${id}'`, (error, results) => { //删除数据库内文件
-            if (error) {
-              console.error('Error executing query: ', error);
-              res.status(500).json({ error: 'An error occurred while deleting data from database' });
-              return;
-            }
-            res.status(200).json({ message: 'Item deleted successfully' });
-          });
-        }
-      });
-    } else {
-      console.log('Photo does not exist.');
-      // 如果照片不存在，仍需执行数据库查询和响应发送
-      pool.query(`DELETE FROM Project WHERE id = '${id}'`, (error, results) => { //删除資料庫内圖片
-        if (error) {
-          console.error('Error executing query: ', error);
-          res.status(500).json({ error: 'An error occurred while deleting data from database' });
-          return;
-        }
-        res.status(200).json({ message: 'Item deleted successfully' });
-      });
-    }
-  });
+router.delete(`/DeleteItem/:folder_name/:fileName`, (req, res) => {
+  const project_name = req.params.fileName;
+  const folder = req.params.folder_name;
+  const folderPath = `${__dirname}/../UserUploadFolder/${folder}`;
+  const fileName = project_name; // 要刪除的圖片檔名，包括副檔名
+  const imagePath = path.join(folderPath, fileName); // 圖片完整路徑
+
+  // 檢查圖片是否存在
+  if (fs.existsSync(imagePath)) {
+    // 刪除圖片
+    fs.unlink(imagePath, (err) => {
+      if (err) {
+        console.error('Error deleting image:', err);
+        return res.status(500).send('Error deleting image');
+      } else {
+        console.log('Image deleted successfully!');
+        // 繼續刪除資料庫記錄
+        pool.query(`DELETE FROM Project WHERE folder = '${folder}' AND project_name = '${project_name}'`, (err, result) => {
+          if (err) {
+            console.error('Error deleting database record:', err);
+            return res.status(500).send('Error deleting database record');
+          }
+          // 成功刪除資料庫記錄後，向客戶端發送成功狀態碼
+          res.status(200).send('Image and database record deleted successfully');
+        });
+      }
+    });
+  } else {
+    console.log('Image does not exist.');
+    // 如果圖片不存在，僅刪除資料庫記錄並向客戶端發送成功狀態碼
+    pool.query(`DELETE FROM Project WHERE folder = '${folder}' AND project_name = '${project_name}'`, (err, result) => {
+      if (err) {
+        console.error('Error deleting database record:', err);
+        return res.status(500).send('Error deleting database record');
+      }
+      // 成功刪除資料庫記錄後，向客戶端發送成功狀態碼
+      res.status(200).send('Database record deleted successfully');
+    });
+  }
 });
 
 //get指定資料夾內的requirement.json
