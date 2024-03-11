@@ -5,6 +5,17 @@ const path = require("path");
 const multer = require('multer');
 const fs = require('fs');
 const { log } = require('console');
+const Userstorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null,path.join(__dirname, '../UserUploadFolder'),{recursive: true},() => void 0);
+  },
+  filename: function (req, file, cb) {
+    console.log(1000)
+    console.log(file.originalname)
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: Userstorage });
 //新增使用者資訊到login table
 router.post('/login', (req, res) => {
 
@@ -112,24 +123,24 @@ router.delete('/DeleteFolder/:folder_name', (req, res) => {
 });
 
 //使用者上傳檔案至後端及資料庫
-router.post('/upload', (req, res) => {
-
-  const user = req.body.data.user
+router.post('/upload',upload.single('image'), (req, res) => {
+  console.log(999)
+  console.log(req.file)
+  res.status(200)
+ /* const user = req.body.data.user
   const folder = req.body.data.folder
   const project_name = req.body.data.project_name
   const project_data = req.body.data.project_data
-  const upload_time = req.body.data.upload_time
+  const upload_time = req.body.data.upload_time*/
 
-  pool.query(`insert into Project (user, folder, project_name, project_data, upload_time) values ('${user}', '${folder}', '${project_name}', '${project_data}', '${String(upload_time)}');`)
+  /*pool.query(`insert into Project (user, folder, project_name, project_data, upload_time) values ('${user}', '${folder}', '${project_name}', '${project_data}', '${String(upload_time)}');`)
   res.sendStatus(200);
 
   const folderPath = path.join(__dirname, '../UserUploadFolder', folder);
   const imagePath = path.join(folderPath, String(project_name));
-  console.log(String(project_data[0]))
-  const base64Data = String(project_data[0]).replace(/^data:image\/jpeg;base64,/, "");
+  console.log(String(project_data[0]))*/
 
-
-  fs.writeFileSync(imagePath, base64Data, 'base64');
+  /*fs.writeFileSync(imagePath, project_data, 'base64');*/
 
 });
 
