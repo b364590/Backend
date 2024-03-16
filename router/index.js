@@ -5,17 +5,15 @@ const path = require("path");
 const multer = require('multer');
 const fs = require('fs');
 const { log } = require('console');
-const Userstorage = multer.diskStorage({
+const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null,path.join(__dirname, '../UserUploadFolder'),{recursive: true},() => void 0);
+    cb(null, path.join(`./UserUploadFolder/${req.query.folder}`));
   },
   filename: function (req, file, cb) {
-    console.log(1000)
-    console.log(file.originalname)
-    cb(null, Date.now() + path.extname(file.originalname));
+    cb(null,file.originalname);// Date.now() + path.extname(file.originalname)
   }
 });
-const upload = multer({ storage: Userstorage });
+const upload = multer({ storage });
 //新增使用者資訊到login table
 router.post('/login', (req, res) => {
 
@@ -123,25 +121,15 @@ router.delete('/DeleteFolder/:folder_name', (req, res) => {
 });
 
 //使用者上傳檔案至後端及資料庫
-router.post('/upload',upload.single('image'), (req, res) => {
-  console.log(999)
-  console.log(req.file)
-  res.status(200)
- /* const user = req.body.data.user
-  const folder = req.body.data.folder
-  const project_name = req.body.data.project_name
-  const project_data = req.body.data.project_data
-  const upload_time = req.body.data.upload_time*/
-
-  /*pool.query(`insert into Project (user, folder, project_name, project_data, upload_time) values ('${user}', '${folder}', '${project_name}', '${project_data}', '${String(upload_time)}');`)
-  res.sendStatus(200);
-
+router.post('/upload', upload.single('image'), (req, res) => {
+  const user = req.query.user
+  const folder = req.query.folder
+  const project_name = req.query.project_name
+  const upload_time = req.query.upload_time
   const folderPath = path.join(__dirname, '../UserUploadFolder', folder);
-  const imagePath = path.join(folderPath, String(project_name));
-  console.log(String(project_data[0]))*/
 
-  /*fs.writeFileSync(imagePath, project_data, 'base64');*/
-
+  pool.query(`insert into Project (user, folder, project_name, project_path, upload_time) values ('${user}', '${folder}', '${project_name}', '${folderPath}', '${String(upload_time)}');`)
+  res.sendStatus(200);
 });
 
 
@@ -199,13 +187,19 @@ router.get('/Download', (req, res) => {
 router.get('/upload/:folder_name', (req, res) => {
 
   const folderName = req.params.folder_name
-  const folderPath = `${__dirname}/../UserUploadFolder/${folderName}`;
-
+  const folderPath = path.join(__dirname, '../UserUploadFolder/', folderName);
+  /*
+    1. 前端打 upload folder_name
+    2. 後端收到資訊 回傳 每張圖片的api(url)字串 (回傳array)
+    3. 後端把每張圖片都開一個API
+    4. 前端收到URL array 無腦打API
+    5. 收到所有圖片
+  */
 
   // 检查文件夹是否存在
   if (fs.existsSync(folderPath)) {
     // 读取文件夹中的文件列表
-    fs.readdir(folderPath, (err, files) => {
+    fs.readdir(folderPath, async (err, files) => {
       if (err) {
         console.error('Error reading folder:', err);
         return res.status(500).json({ error: 'Error reading folder' });
@@ -213,42 +207,32 @@ router.get('/upload/:folder_name', (req, res) => {
 
       // 过滤出.jpg文件
       const photoPaths = files.filter(file => file.endsWith('.jpg'))
-        .map(file => path.join(folderPath, file));
+        .map(file => `http://localhost:8080/photo?folderName=${folderName}&file=${file}`);
+
+      // .map(file => `/static/${folderName}/${file}`);
 
       // 将文件路径数组作为响应发送给前端
-      res.json({ photoPaths });
+      res.send(photoPaths);
     });
   } else {
     res.status(404).json({ error: 'Folder not found' });
   }
 
-  /*
-  const query = 'SELECT id, project_data FROM Project';
-
-  pool.query(query, (error, results, fields) => {
-    if (error) {
-      console.error('Error executing query: ', error);
-      res.status(500).json({ error: 'An error occurred while fetching data' });
-      return;
-    }
-
-    res.json(results);
-  });
-  */
 });
 
 
-
-
+router.get('/photo/', (req, res) => {
+  // `http://localhost:8080/photo?folderName=${folderName}&file=${file}`
+  res.sendFile(path.join(__dirname, '../UserUploadFolder', req.query.folderName, req.query.file))
+})
 
 //刪除圖片
 router.delete(`/DeleteItem/:folder_name/:fileName`, (req, res) => {
   const project_name = req.params.fileName;
   const folder = req.params.folder_name;
-  const folderPath = `${__dirname}/../UserUploadFolder/${folder}`;
+  const folderPath = path.join(__dirname, '../UserUploadFolder/', folder);
   const fileName = project_name; // 要刪除的圖片檔名，包括副檔名
   const imagePath = path.join(folderPath, fileName); // 圖片完整路徑
-
   // 檢查圖片是否存在
   if (fs.existsSync(imagePath)) {
     // 刪除圖片
